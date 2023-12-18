@@ -1,31 +1,13 @@
-# let's create functions for different tasks
-
 # start timer
-
 start_time = proc.time()
 
-# input data
-
-args = commandArgs(trailingOnly = TRUE) # CLI args
-
-studies = c("BioMe", "JHS", "WHI")
-chrom = args[1] # chromosome number
-
-## Task 01: creating a matrix from a given LD dataframe
-
+## loading packages
 source("/proj/yunligrp/users/dinelka/scripts/packages/libraries.R")
 
-#pos_file_name = paste("/proj/yunligrp/users/quansun/topLD/phased_geno/EUR/EUR_chr", chrom, "_pos.txt.gz", sep = "")
-#print(pos_file_name)
-
-#read the positions input data
-  #pos = fread(pos_file_name, header = FALSE, data.table = TRUE)
-  #pos = pos[V1 <= 10.6e6 & V1 > 10.5e6]
-#print(pos)
-
-#pos = pos$V1
-#n = length(pos)
-
+# input data
+args = commandArgs(trailingOnly = TRUE) # CLI args
+studies = c("BioMe", "JHS", "WHI")
+chrom = args[1] # chromosome number
 window_size = 1e6
 n_eig_values = c(5, 10, 25, 50, 100)
 
@@ -52,11 +34,8 @@ df_list = list(JHS, BioMe, WHI)
 print(pryr::object_size(df_list))
 
 n_plots = choose(length(df_list), 2)
-#print(n_plots)
 
-#par(mfrow = c(1, 3))
-
-## window start and end
+# Main Function - computing eigen decomposition and plotting graphs
 
 for (n_ev in n_eig_values){
   for (i in (1:(length(df_list)-1))){
@@ -76,8 +55,6 @@ for (n_ev in n_eig_values){
 
         #plot location
       png(paste('/proj/yunligrp/users/dinelka/scripts/LD_calc/varLD/Figures/', df_name_1, '_', df_name_2, '/', chrom, '.png', sep = ""), width = 1100, height = 600)
-    
-      #print(head(ldAdmix_orig))
 
       start = round_any(min(ldAdmix_orig$SNP1), window_size, f = ceiling) / window_size
       end = round_any(max(ldAdmix_orig$SNP1), window_size, f = ceiling) / window_size
@@ -103,10 +80,6 @@ for (n_ev in n_eig_values){
         na_ind = apply(ldAdmix,1,anyNA) # perform function on rows
         ldAdmix = ldAdmix[!na_ind,] 
 
-        #print(head(ldAdmix))
-
-        #print(ldAdmix)
-
         n_ldAdmix = dim(ldAdmix)[1] #num of rows
 
         if (n_ldAdmix <= 1) {
@@ -125,8 +98,6 @@ for (n_ev in n_eig_values){
 
         print('Done creating ldmat matrices')
 
-        #print("sparse matrices created")
-
         print(nrow(ldmat_df1))
 
         if (nrow(ldmat_df1) <= 2) {
@@ -134,8 +105,7 @@ for (n_ev in n_eig_values){
         }
         
         num_eigen = min(round(0.25 * nrow(ldmat_df1), digits = 0), n_ev) #using only minimum of the top 25% or top 1000 of eigen values 
-        #print(num_eigen)
-
+        
         ev_df1 = eigs_sym(ldmat_df1, num_eigen, which = "LA")
         print('Done calculating df1 EVs')
 
@@ -147,8 +117,6 @@ for (n_ev in n_eig_values){
         varLD_score = sum(abs(diffEV))
 
         print('Done calculating varLD score')
-        #print(varLD_score)
-        #print(data.frame(chrom = chrom, window = window, common_SNPs = n_ldAdmix, varLD_score = varLD_score))
 
         df_plot = rbind(df_plot, data.frame(chrom = chrom, window = window, common_SNPs = n_ldAdmix, varLD_score = varLD_score))
 
@@ -162,10 +130,6 @@ for (n_ev in n_eig_values){
 
       df_plot$std_varLD_score = (df_plot$varLD_score - mean_varLD)/sqrt(var_varLD)
 
-      #png(paste('/proj/yunligrp/users/dinelka/scripts/LD_calc_v2/3.0_VarLD/', df_name_1, '_', df_name_2, '/', chrom, '.png', sep = ""))
-      #plot(df_plot$window, df_plot$std_varLD_score, xlab="Window", ylab="Standardized varLD Score", 
-        #main=paste("Standardized varLD score distribution by window: ", chrom, ", ", df_name_1, "_", df_name_2, sep=""))
-
       #dev.off()
 
       perc_95 = quantile(df_plot$std_varLD_score, probs = 0.95)
@@ -175,8 +139,8 @@ for (n_ev in n_eig_values){
 
       write.table(df_plot, paste('/proj/yunligrp/users/dinelka/scripts/LD_calc_v2/3.0_VarLD/', df_name_1, '_', df_name_2, '/', chrom, '/', chrom, '_ev', n_ev, '.txt', sep = ""), row.names = FALSE)
 
-      #plot(df_plot$window, df_plot$varLD_score,type = "b", ylab = "varLD Score", xlab = "Window (500kb)", main = paste("varLD Score Distribution: ", df_name_1, "_", df_name_2, sep=""),
-              #col = "blue", )
+      plot(df_plot$window, df_plot$varLD_score,type = "b", ylab = "varLD Score", xlab = "Window (500kb)", main = paste("varLD Score Distribution: ", df_name_1, "_", df_name_2, sep=""),
+              col = "blue", )
 
     }
   }
